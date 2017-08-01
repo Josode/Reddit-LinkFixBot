@@ -57,7 +57,7 @@ def run_bot(r):
     comments = subreddit.get_comments(limit=700)
 
     for comment in comments:
-        if str(comment.subreddit) in blacklist or str(comment.author) in blacklist:
+        if str(comment.subreddit) in blacklist or str(comment.author) in blacklist or comment.subreddit.over18:
             break
 
         comment_string = comment.body
