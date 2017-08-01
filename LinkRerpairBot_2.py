@@ -9,8 +9,7 @@ import sys
 #
 
 past_comments = []
-blacklist = ['suicidewatch', 'selfharm', 'depression', 'BitcoinAllBot', 'Cairns', 'also_stl', 'SixSpeedDriver',
-             'shermanikk', 'testingbot321']
+blacklist = []
 sub = "all"
 
 
