@@ -1,16 +1,15 @@
-import praw
-import Config
-import time
-import validators
 import sys
+import time
+import praw
+import validators
+from LinkRepairBot import Config
 
-# Current best working version. Bug: doesnt account for normal use of parenthesis.
-# Fix: only reply if distance between []<-->() is less than 3 characters.
-#
+# Working version but no ninja edit delay
 
 past_comments = []
 blacklist = []
 sub = "all"
+comments_limit = 700
 
 
 # open past comments txt file and append all id's to list. create new file if doesnt exist
@@ -32,8 +31,7 @@ def blacklist_file():
         with open("Blacklist.txt", 'r')as file:
             for item in file.readlines():
                 item = item.replace("\n", "").lower()
-                past_comments.append(item)
-        print("Blacklist: " + str(past_comments))
+                blacklist.append(item)
 
     except FileNotFoundError:
         with open("Blacklist.txt", 'w'):
@@ -54,11 +52,11 @@ def bot_login():
 
 def run_bot(r):
     subreddit = r.get_subreddit(sub)
-    comments = subreddit.get_comments(limit=700)
+    comments = subreddit.get_comments(limit=comments_limit)
 
     for comment in comments:
-        if str(comment.subreddit) in blacklist or str(comment.author) in blacklist or comment.subreddit.over18:
-            break
+        if str(comment.subreddit) in blacklist or str(comment.author) in blacklist:
+            continue
 
         comment_string = comment.body
         comment_list = list(comment_string)
@@ -93,22 +91,24 @@ def run_bot(r):
                         print("subreddit: /r/" + str(comment.subreddit))
                         print("user: /u/" + str(comment.author))
 
-                        comment.reply("It looks like you're trying to format a word into a link. Try this instead:"
-                                      "\n\n > \[" + text_string + "](" + link_string + ")"
-                                      "\n\n Result: " + "[" + text_string + "](" + link_string + ") "
-                                      "\n\n***"
-                                      "\n\n ^^Note: ^^Edits ^^appear ^^invisible ^^if ^^made ^^soon "
-                                      "^^after ^^posting. "
-                                      "^^| ^^I'm ^^a ^^bot, ^^beep ^^boop "
-                                      "^^| ^^Downvote ^^to ^^DELETE. "
-                                      "^^| [^^Contact ^^me]"
-                                      "(http://www.reddit.com/message/compose/?to=LinkFixBot&subject=Contact+creator) "
-                                      "^^| ^^[Opt-out]"
-                                      "(http://www.reddit.com/message/compose/?to=LinkFixBot&subject=Opt+Out&message="
-                                      + str(comment.author) +
-                                      ") ^^| ^^[Feedback]"
-                                      "(https://www.reddit.com/r/LinkFixBot/comments/6qys25/feedback_questions"
-                                      "_complaints_etc_can_be_made_here/) ")
+                        reply = ("It looks like you're trying to format a word into a link. Try this instead:"
+                                 "\n\n > \[" + text_string + "](" + link_string + ")"
+                                 "\n\n Result: " + "[" + text_string + "](" + link_string + ") "
+                                 "\n\n Got it fixed? **Downvote to delete.**"
+                                 "\n\n***"
+                                 "\n\n ^^Note: ^^Edits ^^appear ^^invisible ^^if ^^made ^^soon "
+                                 "^^after ^^posting. "
+                                 "^^| ^^I'm ^^a ^^bot, ^^beep ^^boop "
+                                 "^^| [^^Contact ^^me]"
+                                 "(http://www.reddit.com/message/compose/?to=LinkFixBot&subject=Contact+creator) "
+                                 "^^| ^^[Opt-out]"
+                                 "(http://www.reddit.com/message/compose/?to=LinkFixBot&subject=Opt+Out&message="
+                                 + str(comment.author) +
+                                 ") ^^| ^^[Feedback]"
+                                 "(https://www.reddit.com/r/LinkFixBot/comments/6qys25/feedback_questions"
+                                 "_complaints_etc_can_be_made_here/) ")
+
+                        comment.reply(reply)
 
                         print("REPLY SENT! \n\n")
                         past_comments.append(comment.id)
@@ -118,14 +118,14 @@ def run_bot(r):
                         if ind4 + 3 > ind1:
                             send_reply()
                         else:
-                            break
+                            continue
                     elif ind1 < ind3:
                         if ind2 + 3 > ind3:
                             send_reply()
                         else:
-                            break
+                            continue
                     else:
-                        break
+                        continue
 
         with open("PastComments.txt", 'w') as file:
             for item in past_comments:
@@ -143,4 +143,4 @@ while True:
     except:
         print(sys.exc_info()[0])
 
-    time.sleep(1)
+    time.sleep(3)
