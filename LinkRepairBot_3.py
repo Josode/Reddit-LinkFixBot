@@ -4,12 +4,13 @@ import praw
 import validators
 from LinkRepairBot import Config
 
-# Current working verion
+# Current working version
 
 past_comments = []
 blacklist = []
 sub = "all"
 comments_limit = 800
+secs = 40
 
 
 # open past comments txt file and append all id's to list. create new file if doesnt exist
@@ -44,15 +45,16 @@ def bot_login():
                          password=Config.password,
                          client_id=Config.client_id,
                          client_secret=Config.client_secret,
-                         user_agent="I will fix failed text-link markdown and delete at request of user. By /u/Josode")
+                         user_agent="I will fix failed text-link markdown and delete at downvote of a user."
+                                    "By /u/Josode")
+    print(reddit.user.me())
 
-    reddit.login(username=Config.username, password=Config.password, disable_warning=True)
     return reddit
 
 
 def run_bot(r):
-    subreddit = r.get_subreddit(sub)
-    comments = subreddit.get_comments(limit=comments_limit)
+    subreddit = r.subreddit(sub)
+    comments = subreddit.stream.comments()
 
     def check(comment_list):
 
@@ -78,6 +80,9 @@ def run_bot(r):
                 for i in range(ind1 + 1, ind2):
                     link.append(comment_list[i])
                 link_string = ''.join(link)
+
+                if "(" in link_string or ")" in link_string:
+                    return False
 
                 if validators.url(link_string) and not validators.url(text_string):
                     # detects length between [] and (). If too far, doesn't reply
@@ -110,8 +115,8 @@ def run_bot(r):
 
         def send_reply():
             print("Comment still eligible:\n" + comment_str)
-            print("subreddit: /r/" + str(comment.subreddit))
-            print("user: /u/" + str(comment.author))
+            print("Subreddit: /r/" + str(comment.subreddit))
+            print("Author: /u/" + str(comment.author))
 
             ind1 = comment_lst.index("[")
             ind2 = comment_lst.index("]")
@@ -153,10 +158,9 @@ def run_bot(r):
             past_comments.append(comment.id)
 
         if check(comment_list=comment_lst):
-            secs = 45
             print("\n\nComment Found. \nWaiting {} seconds...".format(str(secs)))
             time.sleep(secs)
-            new_comment = r.get_info(thing_id="t1_" + id).body
+            new_comment = r.comment(id).body
             comment_lst = list(new_comment)
             print('new comment: ' + new_comment)
 
@@ -171,11 +175,11 @@ def run_bot(r):
 past_replies()
 blacklist_file()
 r = bot_login()
+print("Running bot on /r/" + sub)
 
 while True:
     try:
         run_bot(r)
     except:
-        print(sys.exc_info()[0])
-
+        print("Excepting HTTP error.")
     time.sleep(0)
